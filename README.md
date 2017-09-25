@@ -1,2 +1,3 @@
 # mini-proj
-DI mini
+
+DI mini project repository (companion files)
