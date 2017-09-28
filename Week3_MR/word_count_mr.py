@@ -1,11 +1,16 @@
-from mrjob.job import MRJob
 import re
+
 #from mrjob.compat import get_jobconf_value
+from mrjob.job import MRJob
+
 from heapq import heappush, heappop, nlargest
 
 
 WORD_RE = re.compile(r"\w+")
 
+# TODO: Can use something like
+# num = get_jobconf_value("my.job.settings.num")
+# to get command line argument e.g. for num-ber of elements to put in top list
 
 class MRWordCount(MRJob):
     def mapper(self, _, line):
@@ -16,31 +21,23 @@ class MRWordCount(MRJob):
         yield (word, sum(counts))
 
 
-# Second job takes a collection of pairs (word, count) and filter for only the highest N e.g. 100
-
-# so also you problem need to write a little more for the MRTopN
-# the mapper nodes will each have a heap
-# which will each have a top 100, your reducer class needs to take the top 100
-# of the set of top 100's
+# Second job takes a collection of pairs (word, count) and filter for
+# only the highest N e.g. 100
 
 
 class MRTopN(MRJob):
-
     def __init__(self):
-        #num = get_jobconf_value("my.job.settings.num")
         self.num = 100
         self.h = []
 
-
+    # Mapper nodes should each have a heap each with a top 100
     def mapper(self, key, value):
-        heappush(self.h, (value, key))
+        yield nlargest(self.num, (value, key))
 
+    # Reducer class needs to take the top 100 of the set of top 100's
+    def reducer(self, top100, _):
+        yield nlargest(self.num, top100)
 
-    def reducer(self):
-        yield nlargest(100, )
-        i = 0
-        while i < self.num:
-            yield heappop(self.h)
 
 class MRTop100(MRJob):
 
