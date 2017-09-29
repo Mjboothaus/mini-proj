@@ -26,17 +26,24 @@ class MRWordCount(MRJob):
 
 
 class MRTopN(MRJob):
-    def __init__(self):
+    def mapper_init(self):
         self.num = 100
-        self.h = []
+        self.heap = []
 
     # Mapper nodes should each have a heap each with a top 100
-    def mapper(self, key, value):
-        yield nlargest(self.num, (value, key))
+    def mapper(self, word, count):
+        for (key, value) in (word, count):
+            heappush(self.heap, (key, value))
+            topN = nlargest(self.num, self.heap)
+        yield (topN.pop(), None)
+
+    #def mapper_final(self, topN, None):
+    #    yield  here
+
 
     # Reducer class needs to take the top 100 of the set of top 100's
-    def reducer(self, top100, _):
-        yield nlargest(self.num, top100)
+    def reducer(self, topN, _):
+        yield nlargest(self.num, topN)
 
 
 class MRTop100(MRJob):
